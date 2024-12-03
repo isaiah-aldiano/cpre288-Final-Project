@@ -17,6 +17,6 @@ void move_backwards(oi_t*sensor, int centimeters);
 
 void turn_counterclockwise(oi_t*sensor, int centimeters);
 
-void bump (oi_t*sensor_data);
+void bump (oi_t*sensor_data, int sum);
 
 #endif /* MOVEMENT_H_ */

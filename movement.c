@@ -8,11 +8,14 @@
 
 #include "movement.h"
 #include "open_interface.h"
+#include "uart_extra_help.h"
+
 void move_forward(oi_t*sensor_data, int centimeters);
 void move_backwards(oi_t *sensor_data, int centimeters);
 void turn_counter_clockwise(oi_t *sensor_data, int degrees);
 void turn_clockwise(oi_t *sensor_data, int degrees);
-void bump (oi_t*sensor_data);
+void bump (oi_t*sensor_data, int sum);
+void helpSend(char data[]);
 
 void turn_clockwise(oi_t *sensor_data, int degrees){
     double sum = 0;
@@ -49,7 +52,7 @@ void move_forward(oi_t*sensor_data, int centimeters){
     oi_setWheels(200, 200); // move forward; full speed
     while (sum < centimeters*10) {
         if(sensor_data->bumpLeft ||sensor_data->bumpRight){
-            bump(sensor_data);
+            bump(sensor_data, sum);
             break;
         }
          oi_update(sensor_data);
@@ -58,28 +61,25 @@ void move_forward(oi_t*sensor_data, int centimeters){
     oi_setWheels(0, 0); // stop
 }
 
-void bump (oi_t*sensor_data){
-    if(sensor_data->bumpLeft){
-
-        move_backwards(sensor_data, 5);
-
-        turn_clockwise(sensor_data, 45);
-
-        move_forward(sensor_data, 15);
-
-        turn_counterclockwise(sensor_data, 90);
-    }
-    else {
-        move_backwards(sensor_data, 5);
-
-        turn_counterclockwise(sensor_data, 45);
-
-        move_forward(sensor_data, 15);
-
-        turn_clockwise(sensor_data, 90);
-    }
+void bump (oi_t*sensor_data, int sum){
+    char command = 't';
     oi_setWheels(0, 0);
-    //move_forward(sensor_data, (sum/10)+15); //returns remaining distance to go forward plus 15cm for the distance backwards
+
+    char message[] = "Bump";
+    helpSend(message);
+
+    while(command != 'c'){
+        command = uart_receive();
+    }
+
+    move_forward(sensor_data, sum / 10);
 }
 
+void helpSend(char data[]){
+    char i;
+    for(i = 0; i < strlen(data); i++){
+        uart_sendChar(data[i]);
+    }
+    uart_sendChar('\n');
+}
 
