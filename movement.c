@@ -16,9 +16,11 @@ void turn_counter_clockwise(oi_t *sensor_data, int degrees);
 void turn_clockwise(oi_t *sensor_data, int degrees);
 void bump (oi_t*sensor_data, int sum);
 void helpSend(char data[]);
+void cliff(oi_t*sensor_data, int sum);
 
 extern volatile  char uart_data;  // Your UART interupt code can place read data here
 extern volatile  char flag;       // Your UART interupt can update this flag
+extern volatile int distTrav;
 
 void turn_clockwise(oi_t *sensor_data, int degrees){
     double sum = 0;
@@ -57,10 +59,11 @@ void move_forward(oi_t*sensor_data, int centimeters){
         if(sensor_data->bumpLeft ||sensor_data->bumpRight){
             bump(sensor_data, sum);
             break;
-        } //if(sensor_data->cliffLeftSignal || sensor_data->cliffRightSignal){
-//            cliff(sensor_data, sum);
-//            break;
-//        }
+        }
+        if(sensor_data->cliffLeftSignal < 100|| sensor_data->cliffRightSignal < 100){
+            cliff(sensor_data, sum);
+            break;
+        }
          oi_update(sensor_data);
          sum += sensor_data->distance;
     }
@@ -68,7 +71,6 @@ void move_forward(oi_t*sensor_data, int centimeters){
 }
 
 void bump (oi_t*sensor_data, int sum){
-    char uart_data = 't';
     oi_setWheels(0, 0);
 
     //Send bump to GUI to alert user of object to remove
@@ -79,17 +81,36 @@ void bump (oi_t*sensor_data, int sum){
     unsigned char duration[4] = {15, 15, 20, 15};
     oi_loadSong(0, 4, notes, duration);
 
-    while(uart_data != 'c'){
+    while(flag == 0){
         //command = uart_receive();
-        oi_play_song(0);
+        //oi_play_song(0);
+        uart_sendChar('\n');
     }
+    flag = 0;
 
     move_forward(sensor_data, sum / 10);
 }
 
-//void cliff (){
-//
-//}
+void cliff(oi_t*sensor_data, int sum){
+    //move_backwards(sensor_data, 10);
+    unsigned char notes[4] = {67, 67, 72, 67};
+    unsigned char duration[4] = {15, 15, 20, 15};
+    oi_loadSong(0, 4, notes, duration);
+
+    oi_play_song(0);
+
+    distTrav =- 60;
+    move_backwards(sensor_data, 10);
+    turn_clockwise(sensor_data, 90);
+    //TODO: scan here
+    move_forward(sensor_data, 60);
+    turn_counterclockwise(sensor_data, 90);
+    //TODO: scan here
+    move_forward(sensor_data, 80);
+    turn_counterclockwise(sensor_data, 90);
+    move_forward(sensor_data, 60);
+    turn_clockwise(sensor_data, 90);
+}
 
 void helpSend(char data[]){
     uart_init(0);

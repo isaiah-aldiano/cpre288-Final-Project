@@ -6,7 +6,6 @@
 #include "servo.h"
 
 void Ascan(void);
-extern volatile int distTrav = 0;
 
 /**
  * main.c
@@ -26,6 +25,7 @@ int main(void)
     int fieldWidth = 64; //In cm
     int fieldLength = 100; //In cm
     int cycles = fieldWidth / roombaWidth;
+    int distTrav = 0;
     char turnDir = 'r'; //Keeps track of which way to turn
 
     for(i = 0; i < cycles; i++){
