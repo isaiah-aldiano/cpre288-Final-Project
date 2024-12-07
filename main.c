@@ -20,6 +20,8 @@ struct someObject{
     short angle;
     int pingDist;
     float linearWidth;
+    bool avoid;
+    float avoidDist;
 };
 
 //void Ascan(void);
@@ -27,8 +29,11 @@ void runScan(float scanData[]);
 void determineObjects(float scanData[], struct someObject obj[]);
 void objectsInit(struct someObject obj[]);
 void sizeObjects(struct someObject obj[]);
+void removeObjects(struct someObject obj[]);
+void move(struct someObject obj[], oi_t *sensor_data);
 
 volatile int doSomething;
+float botSizeCm = 38;
 
 /**
  * main.c
@@ -70,12 +75,10 @@ int main(void)
     bool exitInput = false;
 
     while(1) {
-        move_forward(sensor_data, 30.5);
-        timer_waitMillis(600);
-
         runScan(scanData);
         determineObjects(scanData, obj);
         sizeObjects(obj);
+        removeObjects(obj);
 
     //    turn_counterclockwise(sensor_data, 90);
     //    timer_waitMillis(1200);
@@ -98,10 +101,14 @@ int main(void)
 
             if(exitInput) {
                 exitInput = false;
-                objectsInit(obj);
                 break;
             }
         }
+        move(obj, sensor_data);
+
+        move_forward(sensor_data, 30.5);
+        timer_waitMillis(600);
+        objectsInit(obj);
 
     }
 
@@ -167,7 +174,7 @@ void determineObjects(float scanData[], struct someObject obj[]) {
 //    float copyData[n];
 //    memcpy(copyData, scanData, n * sizeof(scanData[0]));
 
-
+    char buffer[50];
     int i, points = 0, start = -1, end = -1, objCount = 0;
     int margin = 3;
 
@@ -182,7 +189,8 @@ void determineObjects(float scanData[], struct someObject obj[]) {
 
         if(points >= 5) {
             end = i - 1;
-            printf("object found S:%d F:%d SIZE:%d\n", start, end, end - start);
+            sprintf(buffer, "object found S:%d F:%d SIZE:%d\r\n", start, end, end - start);
+            uart_sendStr(buffer);
             obj[objCount].start = start;
             obj[objCount].end = end;
             obj[objCount].angle = (start + end) / 2;
@@ -246,7 +254,62 @@ void objectsInit(struct someObject obj[]) {
         obj[i].angle = -1;
         obj[i].pingDist = -1;
         obj[i].linearWidth = -1;
+        obj[i].avoid = false;
+        obj[i].avoidDist = -1;
     }
+}
+
+void removeObjects(struct someObject obj[]) {
+    int i = 0;
+    char buffer[40];
+
+    while(obj[i].start != -1) {
+        if(obj[i].linearWidth <= 5.5) {
+            sprintf(buffer, "Object %d removed\r\n", i);
+        } else {
+            sprintf(buffer, "Object %d immovable and will be avoided\r\n", i);
+            obj[i].avoid = true;
+        }
+
+        uart_sendStr(buffer);
+        i++;
+    }
+}
+
+void move(struct someObject obj[], oi_t *sensor_data) {
+   int i = 0;
+   float moveToAvoid = -1;
+   bool turnDirection; // left = false, right = true;
+
+   while(obj[i].start != -1) {
+       if(obj[i].avoid) {
+           if(obj[i].end <= 90) {
+               moveToAvoid = (obj[i].pingDist * cos(obj[i].angle));
+               turnDirection = false;
+           } else {
+               moveToAvoid = (obj[i].pingDist * cos(180 - obj[i].angle));
+               turnDirection = true;
+           }
+
+           if(moveToAvoid < botSizeCm / 2) {
+               moveToAvoid = (botSizeCm / 2) - moveToAvoid;
+               if(turnDirection) {
+                   turn_clockwise(sensor_data, 90);
+               } else {
+                   turn_counterclockwise(sensor_data, 90);
+               }
+
+               move_forward(sensor_data, moveToAvoid);
+
+               if(turnDirection) {
+                   turn_counterclockwise(sensor_data, 90);
+               } else {
+                   turn_clockwise(sensor_data, 90);
+               }
+           }
+       }
+       i++;
+   }
 }
 
 //while(1) {
