@@ -15,6 +15,10 @@ uart_extra_help.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/incl
 uart_extra_help.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdbool.h
 uart_extra_help.obj: C:/ti/TivaWare_C_Series-2.2.0.295/inc/tm4c123gh6pm.h
 uart_extra_help.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h
+uart_extra_help.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h
+uart_extra_help.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h
+uart_extra_help.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h
+uart_extra_help.obj: ../Timer.h
 
 ../uart_extra_help.c:
 
@@ -45,4 +49,12 @@ C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdbool.h:
 C:/ti/TivaWare_C_Series-2.2.0.295/inc/tm4c123gh6pm.h:
 
 C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h:
+
+../Timer.h:
 

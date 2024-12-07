@@ -1,7 +1,7 @@
 # FIXED
 
 ping.obj: ../ping.c
-ping.obj: ../timer.h
+ping.obj: ../Timer.h
 ping.obj: C:/ti/TivaWare_C_Series-2.2.0.295/inc/tm4c123gh6pm.h
 ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/stdbool.h
 ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_ti_config.h
@@ -15,10 +15,11 @@ ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine
 ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_stdint.h
 ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/sys/_stdint.h
 ping.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h
+ping.obj: ../ping.h
 
 ../ping.c:
 
-../timer.h:
+../Timer.h:
 
 C:/ti/TivaWare_C_Series-2.2.0.295/inc/tm4c123gh6pm.h:
 
@@ -45,4 +46,6 @@ C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_stdint.h
 C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/sys/_stdint.h:
 
 C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h:
+
+../ping.h:
 

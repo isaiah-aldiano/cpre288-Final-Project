@@ -12,8 +12,8 @@ int degrees = 90;
 int position = 4000;
 short switch_direction = 1;
 int base_1_millisecond = 16000;
-int right_cal = 6390;
-int left_cal = 34755;
+int right_cal = 9000;
+int left_cal = 38700;
 float difference;
 float denom;
 
@@ -154,5 +154,7 @@ void calibrateServo() {
         lcd_printf("%d", match_subtract);
     }
 }
+
+
 
 

@@ -4,97 +4,90 @@
  *  Created on: Oct 30, 2024
  *      Author: lewisc65
  */
-#include "timer.h"
+#include "Timer.h"
+#include "ping.h"
 
-void TIMER3B_Handler(void);
-void send_pulse();
+void TIMER3B_Handler(void)
+{
+    uint32_t timer = TIMER3_TBR_R;
 
-volatile enum {LOW, HIGH, DONE} state; // set by ISR
-volatile unsigned int rising_time; //Pulse start time: Set by ISR
-volatile unsigned int falling_time; //Pulse end time: Set by ISR
-volatile unsigned int level = 0;
-volatile unsigned int overflowCount;
+    if(state == DONE) {
+        state = LOW;
+    }
+    if (state == LOW) {
+        rising_time = timer;
+        state = HIGH;
+    } else if (state == HIGH) {
+        falling_time = timer;
+        state = DONE;
+    }
 
-void ping_init(void) {
-    overflowCount = 0;
-
-    SYSCTL_RCGCGPIO_R |= 0b10;
-    GPIO_PORTB_DEN_R |= 0x8;
-    SYSCTL_RCGCTIMER_R |= 0x8;
-    GPIO_PORTB_AFSEL_R |= 0x8;
-    GPIO_PORTB_PCTL_R &= 0xFFFF0FFF;
-    GPIO_PORTB_PCTL_R |= 0x7000;
-
-    TIMER3_CTL_R &= 0xEFF;
-    TIMER3_CFG_R |= 0x4;
-
-    TIMER3_TBMR_R |= 0b00111; //
-    TIMER3_TBMR_R &= 0b00111;
-
-    TIMER3_CTL_R |= 0xC00; //Set edge detection
-
-    TIMER3_TBILR_R |= 0xFFFF; //Timer start set
-    TIMER3_TBPR_R |= 0xFF;
-
-    TIMER3_IMR_R &= ~0x400; //interrupt enable
-    NVIC_EN1_R |= 0x10;
-
-    TIMER3_CTL_R |= 0x100;
     TIMER3_ICR_R |= 0x400;
 
-    IntRegister(INT_TIMER3B, TIMER3B_Handler);
+}
+
+void ping_init(void) {
+    SYSCTL_RCGCGPIO_R |= 0x02;
+    GPIO_PORTB_AFSEL_R |= 0x08;
+    GPIO_PORTB_DEN_R |= 0x08;
+
+    SYSCTL_RCGCTIMER_R |= 0x08;
+
+    TIMER3_CTL_R &= 0xEFF; // Disable Timer 3
+    TIMER3_CFG_R |= 0x04; // Set as 16 bit timer config
+    TIMER3_TBMR_R |= 0x7; // Capture mode, Edge Time Mode
+    TIMER3_TBMR_R &= 0xEF; // Count Down mode
+    TIMER3_TBILR_R |= 0xFFFF; // Max Value for 16 bit register
+    TIMER3_TBPR_R |= 0xFF; // Max value for 8 bit prescaler
+
+    TIMER3_ICR_R |= 0x400; // Clear Timer 3B Capture mode event Interrupt
+    TIMER3_IMR_R |= 0x400; // Enable Timber 3B capture mode event interrupts
+
+    NVIC_EN1_R |= 0b10000; // Enable Pin 36 in the NVIC
+
+    IntRegister(INT_TIMER3B, TIMER3B_Handler); // Bind interrupt to handler
+    IntMasterEnable();
+
+    TIMER3_CTL_R |= 0xC00; // Enable Timer 3B with dual edge detection
 }
 
 int ping_read(void){
     send_pulse();
 
-    int timeReturn;
+    int cycles;
 
-    //timer_waitMicros(1000000);
+    cycles = rising_time - falling_time;
 
-    while(level < 2){}; //wait for pulse to be recieved
+    cycles = abs(cycles); // Rising - falling = echo pulse width in clock cycles
 
-    level = 0; //reset where pulse is at
-    timeReturn = rising_time - falling_time; //calculate pulse time
-
-    if(timeReturn < 0){
-        overflowCount++;
+    if(falling_time > rising_time) {
+        overflow++;
     }
 
-    return timeReturn;
+    return cycles;
 }
 
 void send_pulse() {
-    GPIO_PORTB_AFSEL_R &= 0b11110111;
-    TIMER3_ICR_R |= 0x400;
-    TIMER3_IMR_R &= 0xDFF;
+    TIMER3_CTL_R &= 0xFEFF;
 
-    GPIO_PORTB_DIR_R |= 0b1000;// Set PB3 as output
-    GPIO_PORTB_DATA_R &= ~0x08;// Set PB3 to low 0b1000
-    GPIO_PORTB_DATA_R |= 0x08;// Set PB3 to high
-    // wait at least 5 microseconds based on data sheet
-    timer_waitMicros(6);
-    TIMER3_ICR_R |= 0x400;
-    GPIO_PORTB_DATA_R &= ~0x08;// Set PB3 to low
-    GPIO_PORTB_DIR_R &= 0x7;// Set PB3 as input
+    GPIO_PORTB_AFSEL_R &= 0xF7;
+    GPIO_PORTB_PCTL_R &= 0x0000;
+    GPIO_PORTB_DIR_R |= 0x08;
+    GPIO_PORTB_DATA_R |= 0x08;
 
-    //After Pulse send
-    GPIO_PORTB_AFSEL_R |= 0b1000;
-    GPIO_PORTB_DIR_R &= 0b0111;
-    TIMER3_ICR_R |= 0x400;
-    TIMER3_IMR_R |= 0x400;
+    timer_waitMicros(5);
+    TIMER3_ICR_R |= 0x400; // Clear Timer 3B Capture mode event Interrupt
 
+
+    GPIO_PORTB_DATA_R &= 0xF7;
+    GPIO_PORTB_DIR_R &= 0xF7;
+    GPIO_PORTB_AFSEL_R |= 0x08;
+    GPIO_PORTB_PCTL_R |= 0x00007000;
+
+    TIMER3_CTL_R |= 0x0100;
+
+    state = DONE;
 }
 
-void TIMER3B_Handler(void)
-{
-    if(level == 0){
-        rising_time = TIMER3_TBR_R;
-    } if(level == 1){
-        falling_time = TIMER3_TBR_R;
-    }
-    TIMER3_ICR_R |= 0x400;
-    level++;
 
-}
 

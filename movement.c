@@ -10,36 +10,38 @@
 #include "open_interface.h"
 #include "uart_extra_help.h"
 
-void move_forward(oi_t*sensor_data, int centimeters);
-void move_backwards(oi_t *sensor_data, int centimeters);
-void turn_counter_clockwise(oi_t *sensor_data, int degrees);
-void turn_clockwise(oi_t *sensor_data, int degrees);
-void bump (oi_t*sensor_data, int sum);
-void helpSend(char data[]);
+//void move_forward(oi_t*sensor_data, int centimeters);
+//void move_backwards(oi_t *sensor_data, int centimeters);
+//void turn_counter_clockwise(oi_t *sensor_data, double degrees);
+//void turn_clockwise(oi_t *sensor_data, double degrees);
+//void bump (oi_t*sensor_data, int sum);
+//void helpSend(char data[]);
 
-void turn_clockwise(oi_t *sensor_data, int degrees){
+const double ERROR = .017;
+
+void turn_clockwise(oi_t *sensor_data, double degrees){
     double sum = 0;
-    oi_setWheels(-200, 200); // turn clockwise
-    while (sum > -1 * (degrees - 10)) { //turn set degrees
+    oi_setWheels(-50, 50); // turn clockwise
+    while (sum > (-1 * degrees) + (degrees * ERROR)) { //turn set degrees
              oi_update(sensor_data);
              sum += sensor_data->angle;
     }
     oi_setWheels(0, 0); // stop
 }
 
-void turn_counterclockwise(oi_t *sensor_data, int degrees){
+void turn_counterclockwise(oi_t *sensor_data, double degrees){
     double sum = 0;
-    oi_setWheels(200, -200); // turn counterclockwise
-    while (sum < (degrees - 20)) { //turn set degrees
+    oi_setWheels(50, -50); // turn counterclockwise
+    while (sum < degrees - (degrees * ERROR)) { //turn set degrees
              oi_update(sensor_data);
              sum += sensor_data->angle;
     }
     oi_setWheels(0, 0); // stop
 }
 
-void move_backwards(oi_t *sensor_data, int centimeters){
+void move_backwards(oi_t *sensor_data, double centimeters){
     double sum = 0;
-    oi_setWheels(-200, -200); // move backwards
+    oi_setWheels(-100, -100); // move backwards
     while (sum > -10 * centimeters) { //turn set degrees
              oi_update(sensor_data);
              sum += sensor_data->distance;
@@ -47,9 +49,9 @@ void move_backwards(oi_t *sensor_data, int centimeters){
     oi_setWheels(0, 0); // stop
 }
 
-void move_forward(oi_t*sensor_data, int centimeters){
+void move_forward(oi_t*sensor_data, double centimeters){
     double sum = 0;
-    oi_setWheels(200, 200); // move forward; full speed
+    oi_setWheels(96, 105); // move forward; full speed
     while (sum < centimeters*10) {
 //        if(sensor_data->bumpLeft ||sensor_data->bumpRight){
 //            bump(sensor_data, sum);
