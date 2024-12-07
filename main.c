@@ -30,16 +30,17 @@ int main(void)
 
     for(i = 0; i < cycles; i++){
         //Travel small distance and scan until reaching full field length
-        while(distTrav < fieldLength) {
-            distTrav += 40;
+        distTrav = fieldLength;
+        while(distTrav > 0) {
+            distTrav -= 40;
             move_forward(sensor_data, 40);
 
             //Scan field
             Ascan();
         }
 
-        move_forward(sensor_data, fieldLength - distTrav);
-        distTrav = 0;
+        move_forward(sensor_data, distTrav);
+
 
         if(turnDir == 'r'){
             turnDir = 'l';

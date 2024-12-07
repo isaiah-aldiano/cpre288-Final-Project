@@ -17,6 +17,7 @@ void turn_clockwise(oi_t *sensor_data, int degrees);
 void bump (oi_t*sensor_data, int sum);
 void helpSend(char data[]);
 void cliff(oi_t*sensor_data, int sum);
+void move_cliff(oi_t*sensor_data, int centimeters);
 
 extern volatile  char uart_data;  // Your UART interupt code can place read data here
 extern volatile  char flag;       // Your UART interupt can update this flag
@@ -70,6 +71,20 @@ void move_forward(oi_t*sensor_data, int centimeters){
     oi_setWheels(0, 0); // stop
 }
 
+void move_cliff(oi_t*sensor_data, int centimeters){
+    double sum = 0;
+    oi_setWheels(200, 200); // move forward; full speed
+    while (sum < centimeters*10) {
+        if(sensor_data->bumpLeft ||sensor_data->bumpRight){
+            bump(sensor_data, sum);
+            break;
+        }
+         oi_update(sensor_data);
+         sum += sensor_data->distance;
+    }
+    oi_setWheels(0, 0); // stop
+}
+
 void bump (oi_t*sensor_data, int sum){
     oi_setWheels(0, 0);
 
@@ -99,17 +114,24 @@ void cliff(oi_t*sensor_data, int sum){
 
     oi_play_song(0);
 
-    distTrav =- 60;
+    distTrav = distTrav - 60 + (sum / 10);
+
     move_backwards(sensor_data, 10);
     turn_clockwise(sensor_data, 90);
     //TODO: scan here
-    move_forward(sensor_data, 60);
+    move_forward(sensor_data, 50);
     turn_counterclockwise(sensor_data, 90);
     //TODO: scan here
     move_forward(sensor_data, 80);
-    turn_counterclockwise(sensor_data, 90);
-    move_forward(sensor_data, 60);
-    turn_clockwise(sensor_data, 90);
+
+    if(distTrav > 30){
+        turn_counterclockwise(sensor_data, 90);
+        move_forward(sensor_data, 50);
+        turn_clockwise(sensor_data, 90);
+    }
+
+
+
 }
 
 void helpSend(char data[]){

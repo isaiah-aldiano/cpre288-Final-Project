@@ -9,6 +9,9 @@
 #define MOVEMENT_H_
 #include "open_interface.h"
 
+extern volatile  char uart_data;  // Your UART interupt code can place read data here
+extern volatile  char flag;       // Your UART interupt can update this flag
+
 void move_forward(oi_t*sensor, int centimeters);
 
 void turn_clockwise(oi_t *sensor, int degrees);
