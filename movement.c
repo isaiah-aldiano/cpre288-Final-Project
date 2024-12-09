@@ -17,6 +17,7 @@
 //void bump (oi_t*sensor_data, int sum);
 //void helpSend(char data[]);
 void cliff(oi_t*sensor_data, int sum);
+void turn_random_dir();
 
 const double ERROR = .017;
 
@@ -51,21 +52,22 @@ void move_backwards(oi_t *sensor_data, double centimeters){
 }
 
 void move_forward(oi_t*sensor_data, double centimeters){
+
     double sum = 0;
     oi_setWheels(100, 100); // move forward; full speed
     while (sum < centimeters*10) {
-//        if(sensor_data->bumpLeft ||sensor_data->bumpRight){
-//            bump(sensor_data, sum);
-//            oi_setWheels(0, 0);
-//
-//            break;
-//        }
-//        if(sensor_data->cliffLeftSignal < 100 || sensor_data->cliffRightSignal < 100 || sensor_data->cliffLeftSignal > 2700 || sensor_data->cliffRightSignal > 2700){
-//            cliff(sensor_data, sum);
-//            oi_setWheels(0, 0);
-//            turn_clockwise(sensor_data, 90);
-//            break;
-//        }
+        if(sensor_data->bumpLeft ||sensor_data->bumpRight){
+            bump(sensor_data, sum);
+            oi_setWheels(0, 0);
+            turn_random_dir(sensor_data);
+            break;
+        }
+        if(sensor_data->cliffLeftSignal < 100 || sensor_data->cliffRightSignal < 100 || sensor_data->cliffLeftSignal > 2700 || sensor_data->cliffRightSignal > 2700){
+            cliff(sensor_data, sum);
+            oi_setWheels(0, 0);
+            turn_random_dir(sensor_data);
+            break;
+        }
          oi_update(sensor_data);
          sum += sensor_data->distance;
     }
@@ -83,6 +85,14 @@ void bump (oi_t*sensor_data, int sum){
     unsigned char duration[4] = {15, 15, 20, 15};
     oi_loadSong(0, 4, notes, duration);
 
+    while(1) {
+        if(doSomething) {
+            uart_sendStr("\r\n");
+            doSomething = 0;
+            break;
+        }
+    }
+
 //    while(flag == 0){
 //        //command = uart_receive();
 //        //oi_play_song(0);
@@ -90,7 +100,7 @@ void bump (oi_t*sensor_data, int sum){
 //    }
 //    flag = 0;
 
-    move_forward(sensor_data, sum / 10);
+//    move_forward(sensor_data, sum / 10);
 
 }
 
@@ -130,5 +140,16 @@ void helpSend(char data[]){
         uart_sendChar(data[i]);
     }
     uart_sendChar('\n');
+}
+
+
+void turn_random_dir(oi_t*sensor_data) {
+    int r = rand();
+
+    if(r % 2 == 0) {
+        turn_clockwise(sensor_data, 90);
+    } else {
+        turn_counterclockwise(sensor_data, 90);
+    }
 }
 

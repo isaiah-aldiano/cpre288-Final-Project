@@ -10,6 +10,11 @@
 #include "movement.h"
 #include "servo.h"
 #include "ping.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+
 
 
 //Object Struct
@@ -60,6 +65,7 @@ int main(void)
     servo_init();
     ping_init();
 
+    srand(time(NULL));
 //    // Servo Calibration
 //    button_init();
 //    calibrateServo();
@@ -69,55 +75,16 @@ int main(void)
 //    timer_waitMillis(1000);
 //    ADC_calibrate();
 
-//    struct et phoneHome;
     volatile int continuing = -1;
+    int r;
 
     float scanData[180];
     char printData[40];
     struct someObject obj[5];
     objectsInit(obj);
-//
-//    runScan(scanData);
-//    determineObjects(scanData, obj);
-//    sizeObjects(obj);
-//
 
-//
-//    bool adjustNeeded = false;
-//    bool exitInput = false;
 
     while(1) {
-
-
-    //    turn_counterclockwise(sensor_data, 90);
-    //    timer_waitMillis(1200);
-
-//        if(adjustNeeded) {
-//            turn_clockwise(sensor_data, 3);
-//            timer_waitMillis(300);
-//            adjustNeeded = false;
-//        } else {
-//            adjustNeeded = true;
-//        }
-
-//        while(1) {
-////            uart_sendChar(doSomething);
-//            switch(doSomething) {
-//            case 1:
-//                exitInput = true;
-//                break;
-//            }
-//
-//            if(exitInput) {
-//                exitInput = false;
-//                break;
-//            }
-//        }
-//        runScan(scanData);
-//        determineObjects(scanData, obj);
-//        sizeObjects(obj);
-//        removeObjects(obj);
-//        objectsInit(obj);
 
         while(1) {
             oi_setWheels(0, 0); // stop
@@ -127,40 +94,16 @@ int main(void)
             determineObjects(scanData, obj, printData);
             sizeObjects(obj, scanData);
             removeObjects(obj, printData);
-            continuing = moveToAvoid(obj, sensor_data);
+//            continuing = moveToAvoid(obj, sensor_data);
             objectsInit(obj);
             if(continuing == 2) {
-//                int s;
                 break;
             }
         }
 
-//        while(1) {
-//            /*
-//             * 1. Run a scan
-//             * 2. Determine if objects can be removed
-//             *      a. If removable "remove" objects and wait for key press to continue
-//             * 3. Determine if objects must be avoided
-//             *      a. Determine how far to move away from object
-//             * 4. Move cleaner
-//             *      a. avoid immovable objects
-//             *      b. return to original path
-//             *      c. if bump sensor hits short object then remove short object
-//             */
-//
-//
-//            uart_sendChar(doSomething);
-//            switch(doSomething) {
-//            case 1:
-//                break;
-//            }
-//        }
 
-        move_forward(sensor_data, 20);
+        move_forward(sensor_data, 40);
     }
-
-
-
 
     return 1;
 
@@ -336,7 +279,7 @@ void removeObjects(struct someObject obj[], char printData[]) {
             sprintf(printData, "Object %d removed\r\n", i + 1);
             uart_sendStr(printData);
             while(1) {
-                uart_sendChar(doSomething);
+//                uart_sendChar(doSomething);
                 if(doSomething) {
                     uart_sendStr("\r\n");
                     doSomething = 0;
@@ -357,29 +300,29 @@ void removeObjects(struct someObject obj[], char printData[]) {
     }
 }
 
-int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
-   int i = 0;
-   float moveToAvoid = -1;
-   bool turnDirection; // left = false, right = true;
-
-   while(obj[i].start != -1 && i < 5) {
-       if(obj[i].avoid) {
-           // Determines of object is on right or left and which direction to turn to avoid it
-           if(obj[i].angle <= 90) {
-               moveToAvoid = (obj[i].pingDist * cos(obj[i].start));
-               turnDirection = false;
-           } else {
-               moveToAvoid = (obj[i].pingDist * cos(180 - obj[i].start));
-               turnDirection = true;
-           }
-
-
-           if(turnDirection) {
-               turn_clockwise(sensor_data, 90);
-           } else {
-               turn_counterclockwise(sensor_data, 90);
-           }
-           // Moves bought to avoid object
+//int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
+//   int i = 0;
+//   float moveToAvoid = -1;
+//   bool turnDirection; // left = false, right = true;
+//
+//   while(obj[i].start != -1 && i < 5) {
+//       if(obj[i].avoid) {
+//           // Determines of object is on right or left and which direction to turn to avoid it
+//           if(obj[i].angle <= 90) {
+//               moveToAvoid = (obj[i].angle * cos(obj[i].start));
+//               turnDirection = false;
+//           } else {
+//               moveToAvoid = (obj[i].angle * cos(180 - obj[i].start));
+//               turnDirection = true;
+//           }
+//
+//
+//           if(turnDirection) {
+//               turn_clockwise(sensor_data, 90);
+//           } else {
+//               turn_counterclockwise(sensor_data, 90);
+//           }
+//           // Moves bought to avoid object
 //           if(moveToAvoid < botSizeCm / 2) {
 //               moveToAvoid = (botSizeCm / 2) - moveToAvoid;
 //               if(turnDirection) {
@@ -387,7 +330,7 @@ int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
 //               } else {
 //                   turn_counterclockwise(sensor_data, 90);
 //               }
-
+//
 //               move_forward(sensor_data, moveToAvoid);
 //
 //               if(turnDirection) {
@@ -396,13 +339,13 @@ int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
 //                   turn_clockwise(sensor_data, 90);
 //               }
 //           }
-           return i;
-       }
-       i++;
-   }
-
-   return 2;
-}
+//           return i;
+//       }
+//       i++;
+//   }
+//
+//   return 2;
+//}
 
 //while(1) {
 ////        move_forward(sensor_data, 65);
