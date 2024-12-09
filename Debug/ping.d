@@ -16,6 +16,9 @@ ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine
 ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/sys/_stdint.h
 ping.obj: C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h
 ping.obj: ../ping.h
+ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h
+ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h
+ping.obj: C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h
 
 ../ping.c:
 
@@ -48,4 +51,10 @@ C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/sys/_stdint.h:
 C:/ti/TivaWare_C_Series-2.2.0.295/driverlib/interrupt.h:
 
 ../ping.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/math.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/_defs.h:
+
+C:/ti/ccs1271/ccs/tools/compiler/ti-cgt-arm_20.2.7.LTS/include/machine/_limits.h:
 

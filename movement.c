@@ -16,6 +16,7 @@
 //void turn_clockwise(oi_t *sensor_data, double degrees);
 //void bump (oi_t*sensor_data, int sum);
 //void helpSend(char data[]);
+void cliff(oi_t*sensor_data, int sum);
 
 const double ERROR = .017;
 
@@ -51,10 +52,18 @@ void move_backwards(oi_t *sensor_data, double centimeters){
 
 void move_forward(oi_t*sensor_data, double centimeters){
     double sum = 0;
-    oi_setWheels(96, 105); // move forward; full speed
+    oi_setWheels(100, 100); // move forward; full speed
     while (sum < centimeters*10) {
 //        if(sensor_data->bumpLeft ||sensor_data->bumpRight){
 //            bump(sensor_data, sum);
+//            oi_setWheels(0, 0);
+//
+//            break;
+//        }
+//        if(sensor_data->cliffLeftSignal < 100 || sensor_data->cliffRightSignal < 100 || sensor_data->cliffLeftSignal > 2700 || sensor_data->cliffRightSignal > 2700){
+//            cliff(sensor_data, sum);
+//            oi_setWheels(0, 0);
+//            turn_clockwise(sensor_data, 90);
 //            break;
 //        }
          oi_update(sensor_data);
@@ -64,17 +73,55 @@ void move_forward(oi_t*sensor_data, double centimeters){
 }
 
 void bump (oi_t*sensor_data, int sum){
-    char command = 't';
     oi_setWheels(0, 0);
 
+    //Send bump to GUI to alert user of object to remove
     char message[] = "Bump";
     helpSend(message);
 
-    while(command != 'c'){
-        command = uart_receive();
-    }
+    unsigned char notes[4] = {67, 67, 72, 67};
+    unsigned char duration[4] = {15, 15, 20, 15};
+    oi_loadSong(0, 4, notes, duration);
+
+//    while(flag == 0){
+//        //command = uart_receive();
+//        //oi_play_song(0);
+//        uart_sendChar('\n');
+//    }
+//    flag = 0;
 
     move_forward(sensor_data, sum / 10);
+
+}
+
+void cliff(oi_t*sensor_data, int sum){
+    oi_setWheels(0, 0); // stop
+
+    //move_backwards(sensor_data, 10);
+    unsigned char notes[4] = {67, 67, 72, 67};
+    unsigned char duration[4] = {15, 15, 20, 15};
+    oi_loadSong(0, 4, notes, duration);
+
+//    oi_play_song(0);
+
+//    distTrav = distTrav - 60 + (sum / 10);
+//
+    move_backwards(sensor_data, 10);
+//    turn_clockwise(sensor_data, 90);
+//    //TODO: scan here
+//    move_forward(sensor_data, 50);
+//    turn_counterclockwise(sensor_data, 90);
+//    //TODO: scan here
+//    move_forward(sensor_data, 80);
+//
+//    if(distTrav > 30){
+//        turn_counterclockwise(sensor_data, 90);
+//        move_forward(sensor_data, 50);
+//        turn_clockwise(sensor_data, 90);
+//    }
+
+
+
 }
 
 void helpSend(char data[]){

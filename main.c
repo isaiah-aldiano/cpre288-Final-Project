@@ -24,16 +24,26 @@ struct someObject{
     float avoidDist;
 };
 
-//void Ascan(void);
-void runScan(float scanData[]);
-void determineObjects(float scanData[], struct someObject obj[]);
-void objectsInit(struct someObject obj[]);
-void sizeObjects(struct someObject obj[]);
-void removeObjects(struct someObject obj[]);
-void move(struct someObject obj[], oi_t *sensor_data);
+struct et {
+    double forward[5];
+    double backward[5];
+    double left[5];
+    double right[5];
+    short directions[40];
+};
 
-volatile int doSomething;
+//void Ascan(void);
+void runScan(float scanData[], char printData[]);
+void determineObjects(float scanData[], struct someObject obj[], char printData[]);
+void objectsInit(struct someObject obj[]);
+void sizeObjects(struct someObject obj[], float scanData[]);
+void removeObjects(struct someObject obj[], char printData[]);
+int moveToAvoid(struct someObject obj[], oi_t *sensor_data);
+
+volatile int doSomething = 0;
 float botSizeCm = 38;
+float returnToPath;
+int objectAtSide;
 
 /**
  * main.c
@@ -50,18 +60,20 @@ int main(void)
     servo_init();
     ping_init();
 
-//     Servo Calibration
+//    // Servo Calibration
 //    button_init();
 //    calibrateServo();
 
 //    // ADC calibration
-//    servo_move_degrees(90);
+    servo_move_degrees(90);
 //    timer_waitMillis(1000);
 //    ADC_calibrate();
 
-
+//    struct et phoneHome;
+    volatile int continuing = -1;
 
     float scanData[180];
+    char printData[40];
     struct someObject obj[5];
     objectsInit(obj);
 //
@@ -70,79 +82,95 @@ int main(void)
 //    sizeObjects(obj);
 //
 
-
-    bool adjustNeeded = false;
-    bool exitInput = false;
+//
+//    bool adjustNeeded = false;
+//    bool exitInput = false;
 
     while(1) {
-        runScan(scanData);
-        determineObjects(scanData, obj);
-        sizeObjects(obj);
-        removeObjects(obj);
+
 
     //    turn_counterclockwise(sensor_data, 90);
     //    timer_waitMillis(1200);
 
-        if(adjustNeeded) {
-            turn_clockwise(sensor_data, 3);
-            timer_waitMillis(300);
-            adjustNeeded = false;
-        } else {
-            adjustNeeded = true;
-        }
+//        if(adjustNeeded) {
+//            turn_clockwise(sensor_data, 3);
+//            timer_waitMillis(300);
+//            adjustNeeded = false;
+//        } else {
+//            adjustNeeded = true;
+//        }
+
+//        while(1) {
+////            uart_sendChar(doSomething);
+//            switch(doSomething) {
+//            case 1:
+//                exitInput = true;
+//                break;
+//            }
+//
+//            if(exitInput) {
+//                exitInput = false;
+//                break;
+//            }
+//        }
+//        runScan(scanData);
+//        determineObjects(scanData, obj);
+//        sizeObjects(obj);
+//        removeObjects(obj);
+//        objectsInit(obj);
 
         while(1) {
-//            uart_sendChar(doSomething);
-            switch(doSomething) {
-            case 1:
-                exitInput = true;
-                break;
-            }
+            oi_setWheels(0, 0); // stop
+            uart_init();
 
-            if(exitInput) {
-                exitInput = false;
+            runScan(scanData, printData);
+            determineObjects(scanData, obj, printData);
+            sizeObjects(obj, scanData);
+            removeObjects(obj, printData);
+            continuing = moveToAvoid(obj, sensor_data);
+            objectsInit(obj);
+            if(continuing == 2) {
+//                int s;
                 break;
             }
         }
-        move(obj, sensor_data);
 
-        move_forward(sensor_data, 30.5);
-        timer_waitMillis(600);
-        objectsInit(obj);
+//        while(1) {
+//            /*
+//             * 1. Run a scan
+//             * 2. Determine if objects can be removed
+//             *      a. If removable "remove" objects and wait for key press to continue
+//             * 3. Determine if objects must be avoided
+//             *      a. Determine how far to move away from object
+//             * 4. Move cleaner
+//             *      a. avoid immovable objects
+//             *      b. return to original path
+//             *      c. if bump sensor hits short object then remove short object
+//             */
+//
+//
+//            uart_sendChar(doSomething);
+//            switch(doSomething) {
+//            case 1:
+//                break;
+//            }
+//        }
 
+        move_forward(sensor_data, 20);
     }
 
 
-//    while(1) {
-//        /*
-//         * 1. Run a scan
-//         * 2. Determine if objects can be removed
-//         *      a. If removable "remove" objects and wait for key press to continue
-//         * 3. Determine if objects must be avoided
-//         *      a. Determine how far to move away from object
-//         * 4. Move cleaner
-//         *      a. avoid immovable objects
-//         *      b. return to original path
-//         *      c. if bump sensor hits short object then remove short object
-//         */
-//
-//
-//        uart_sendChar(doSomething);
-//        switch(doSomething) {
-//        case 1:
-//            break;
-//        }
-//    }
+
 
     return 1;
 
 }
 
 
-void runScan(float scanData[]) {
-    char data[20];
+void runScan(float scanData[], char printData[]) {
+//    char data[20];
 
-    int i;
+    int i, j,scans = 3;
     float dist_cm;
 
     char str[] = "\r\nDegrees   Distance(cm)\r\n";
@@ -153,33 +181,45 @@ void runScan(float scanData[]) {
 
     IR_SCAN();
 
-    for(i = 0; i < 180; i++) {
+    for(i = 1; i < 180; i++) {
+        dist_cm = 0;
         servo_move_degrees(i);
-        dist_cm = IR_SCAN();
-        scanData[i] = dist_cm;
 
-        sprintf(data, "\r\n%-10d%.2f", i, dist_cm);
-        uart_sendStr(data);
+        for(j = 0; j < scans; j++) {
+            dist_cm += IR_SCAN();
+        }
+
+        scanData[i] = dist_cm / scans;
+
+        sprintf(printData,"%-10d %d\r\n", i, (int) dist_cm / scans);
+        uart_sendStr(printData);
+
+
     }
 
     timer_waitMillis(1000);
     servo_move_degrees(1);
 
-    uart_sendStr("\r\n");
-    free(data);
+//    uart_sendStr("\r\n");
+//    free(data);
 }
 
-void determineObjects(float scanData[], struct someObject obj[]) {
-//    int n = sizeof(scanData) / sizeof(scanData[0]);
-//    float copyData[n];
-//    memcpy(copyData, scanData, n * sizeof(scanData[0]));
-
-    char buffer[50];
+void determineObjects(float scanData[], struct someObject obj[], char printData[]) {
+//    char buffer[30];
     int i, points = 0, start = -1, end = -1, objCount = 0;
-    int margin = 3;
+    int margin = 4;
 
     for(i = 1; i < 180; i++) {
-        while(scanData[i] <= scanData[i - 1] + margin && scanData[i] >= scanData[i -1] - margin && scanData[i] < 45) {
+//        while(scanData[i] - margin >= scanData[i - 1] || scanData[i] + margin <= scanData[i -1] && scanData[i] < 35) {
+//            if(start == -1) {
+//                start = i - 1;
+//            }
+//            i++;
+//            points++;
+//        }
+        while(((scanData[i] - margin <= scanData[i - 1] && scanData[i - 1] <= scanData[i]) ||
+                (scanData[i] + margin >= scanData[i - 1] && scanData[i - 1] >= scanData[i]))
+                && scanData[i] < 35) {
             if(start == -1) {
                 start = i - 1;
             }
@@ -187,15 +227,19 @@ void determineObjects(float scanData[], struct someObject obj[]) {
             points++;
         }
 
-        if(points >= 5) {
+        if(points > 7) {
             end = i - 1;
-            sprintf(buffer, "object found S:%d F:%d SIZE:%d\r\n", start, end, end - start);
-            uart_sendStr(buffer);
+            sprintf(printData, "object found S:%d F:%d SIZE:%d\r\n", start, end, end - start);
+            uart_sendStr(printData);
             obj[objCount].start = start;
             obj[objCount].end = end;
             obj[objCount].angle = (start + end) / 2;
             obj[objCount].size = end - start;
             objCount++;
+
+            if(objCount == 5) {
+                break;
+            }
         }
 
         start = -1;
@@ -205,41 +249,63 @@ void determineObjects(float scanData[], struct someObject obj[]) {
 }
 
 float pingObjects(int angle) {
-    int i, scans = 1;
+    int i, scans = 10;
 //    float cycles_in_milliseconds;
     float avg_dist = 0.0;
+    int cycles; // Rising - Falling time of ping
+    float cycles_in_milliseconds;
+    float distance_cm; // distance to object in cm
 
     servo_move_degrees(angle);
     timer_waitMillis(1000);
 
-    IR_SCAN();
+//    IR_SCAN();
 
     for(i = 0; i < scans; i++) {
+//        avg_dist += IR_SCAN();
+        cycles = ping_read();
 
-//        cycles = ping_read();
-//
-//        cycles_in_milliseconds = (float) cycles / 16000;
-//
-//        distance_cm = (float) cycles / 16000000.0; // cycles / clockMHz = seconds between pulse send and receive
-//        distance_cm /= 2.0; // Only account for seconds to object
-//        distance_cm *= 3400.0; // Seconds to object * Speed of sound (~340m/s) * 100(cm in m) = cm to object
-//
-        avg_dist += IR_SCAN();
+        cycles_in_milliseconds = (float) cycles / 16000.0;
 
+        distance_cm = (float) cycles / 16000000.0; // cycles / clockMHz = seconds between pulse send and receive
+        distance_cm /= 2.0; // Only account for seconds to object
+        distance_cm *= 34000.0; // Seconds to object * Speed of sound (~340m/s) * 100(cm in m) = cm to object
 
+//        sprintf(data, "CYC:%d\nMILLI:%.7f\nCM:%.2f\nOverflow:%d", cycles, cycles_in_milliseconds, distance_cm, overflow);
+//
+//
+//
+//        //        sprintf(data, "%d %d\n%d\n%d", rising_time, falling_time, rising_time - falling_time, falling_time - rising_time);
+//        lcd_printf(data);
+
+        avg_dist += distance_cm;
+
+        timer_waitMillis(250);
     }
 
     return avg_dist / scans;
 
 }
 
-void sizeObjects(struct someObject obj[]) {
+void sizeObjects(struct someObject obj[], float scanData[]) {
     int i = 0;
-    while(obj[i].angle != -1) {
-        obj[i].pingDist = pingObjects(obj[i].start - 2);
-        obj[i].linearWidth = obj[i].pingDist * obj[i].size * (3.1415926 / 180);
+    int h;
+    float theda;
+    int angle;
+    while(obj[i].angle != -1 && i < 5) {
+//        h = scanData[obj[i].start] * 2;
+//        angle = (obj[i].angle - obj[i].start) * 2;
+//        theda = sin((angle * M_PI) / 180);
+//        obj[i].pingDist = pingObjects(obj[i].angle);
+
+        h = scanData[obj[i].start] * 2;
+//        angle = (obj[i].angle - obj[i].start) * 2;
+        theda = tan((obj[i].size * M_PI) / 360);
+        obj[i].pingDist = pingObjects(obj[i].angle);
+
+        obj[i].linearWidth =  h * theda;
         i++;
-        timer_waitMillis(1500);
+//        timer_waitMillis(300);
 
     }
     //        linearWidth[i] = objectDist[i] * width * (3.1415926/ 180); //radius * angle (in radians)
@@ -259,57 +325,83 @@ void objectsInit(struct someObject obj[]) {
     }
 }
 
-void removeObjects(struct someObject obj[]) {
+void removeObjects(struct someObject obj[], char printData[]) {
     int i = 0;
-    char buffer[40];
+//    char buffer[30];
 
-    while(obj[i].start != -1) {
-        if(obj[i].linearWidth <= 5.5) {
-            sprintf(buffer, "Object %d removed\r\n", i);
+    uart_init();
+
+    while(obj[i].start != -1 && i < 5) {
+        if(obj[i].linearWidth <= 7.3) {
+            sprintf(printData, "Object %d removed\r\n", i + 1);
+            uart_sendStr(printData);
+            while(1) {
+                uart_sendChar(doSomething);
+                if(doSomething) {
+                    uart_sendStr("\r\n");
+                    doSomething = 0;
+                    break;
+                }
+            }
+
         } else {
-            sprintf(buffer, "Object %d immovable and will be avoided\r\n", i);
-            obj[i].avoid = true;
+            sprintf(printData, "Object %d immovable and will be avoided\r\n", i + 1);
+            uart_sendStr(printData);
+
+            if(obj[i].angle > 5 && obj[i].angle < 175) {
+                obj[i].avoid = true;
+            }
         }
 
-        uart_sendStr(buffer);
         i++;
     }
 }
 
-void move(struct someObject obj[], oi_t *sensor_data) {
+int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
    int i = 0;
    float moveToAvoid = -1;
    bool turnDirection; // left = false, right = true;
 
-   while(obj[i].start != -1) {
+   while(obj[i].start != -1 && i < 5) {
        if(obj[i].avoid) {
-           if(obj[i].end <= 90) {
-               moveToAvoid = (obj[i].pingDist * cos(obj[i].angle));
+           // Determines of object is on right or left and which direction to turn to avoid it
+           if(obj[i].angle <= 90) {
+               moveToAvoid = (obj[i].pingDist * cos(obj[i].start));
                turnDirection = false;
            } else {
-               moveToAvoid = (obj[i].pingDist * cos(180 - obj[i].angle));
+               moveToAvoid = (obj[i].pingDist * cos(180 - obj[i].start));
                turnDirection = true;
            }
 
-           if(moveToAvoid < botSizeCm / 2) {
-               moveToAvoid = (botSizeCm / 2) - moveToAvoid;
-               if(turnDirection) {
-                   turn_clockwise(sensor_data, 90);
-               } else {
-                   turn_counterclockwise(sensor_data, 90);
-               }
 
-               move_forward(sensor_data, moveToAvoid);
-
-               if(turnDirection) {
-                   turn_counterclockwise(sensor_data, 90);
-               } else {
-                   turn_clockwise(sensor_data, 90);
-               }
+           if(turnDirection) {
+               turn_clockwise(sensor_data, 90);
+           } else {
+               turn_counterclockwise(sensor_data, 90);
            }
+           // Moves bought to avoid object
+//           if(moveToAvoid < botSizeCm / 2) {
+//               moveToAvoid = (botSizeCm / 2) - moveToAvoid;
+//               if(turnDirection) {
+//                   turn_clockwise(sensor_data, 90);
+//               } else {
+//                   turn_counterclockwise(sensor_data, 90);
+//               }
+
+//               move_forward(sensor_data, moveToAvoid);
+//
+//               if(turnDirection) {
+//                   turn_counterclockwise(sensor_data, 90);
+//               } else {
+//                   turn_clockwise(sensor_data, 90);
+//               }
+//           }
+           return i;
        }
        i++;
    }
+
+   return 2;
 }
 
 //while(1) {

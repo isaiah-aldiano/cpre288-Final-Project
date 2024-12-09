@@ -1,3 +1,9 @@
+#include <stdint.h>
+#include <inc/tm4c123gh6pm.h>
+#include "Timer.h"
+#include "driverlib/interrupt.h"
+#include <math.h>
+
 /*
  * ping.h
  *

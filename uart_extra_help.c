@@ -60,7 +60,7 @@ void uart_sendStr(const char *data)
         uart_sendChar(*data);
         data++;
     }
-    timer_waitMicros(20);
+    timer_waitMillis(20);
 }
 
 // _PART3
@@ -87,7 +87,7 @@ void UART1_Handler(void) {
         input = UART1_DR_R & 0xFF;
         uart_sendChar(input);
 
-        if(input == 'h') {
+        if(input == 'r') {
             doSomething = 1;
         }
 

@@ -84,14 +84,14 @@ int ADC_read(void){
 
 float IR_SCAN() { // Returns ADC value as distance in CM
     /*
-     * Bot 00 IR calibration y = 20302x^-.875
+     * Bot 12 IR calibration y = y = 17160x^-0.799
+
      * Y = ADC value
      * X = distance
-     * sqrt(-.875, y/20302)
      */
     int adc_value;
-    float divid = 20302;
-    float exponent = -1/.875;
+    float divid = 17160;
+    float exponent = -1/.799;
     float dist_cm;
 
     adc_value = ADC_read();
@@ -108,7 +108,7 @@ void ADC_calibrate(void) {
     for(j = 0; j < 8; j++) {
         uart_sendStr("------------------------------------------------------------------------\r\n");
 
-        for(i = 0; i < 500; i++) {
+        for(i = 0; i < 300; i++) {
             adc_value = ADC_read();
             sprintf(buffer, "%d\r\n", adc_value);
             uart_sendStr(buffer);

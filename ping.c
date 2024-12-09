@@ -71,7 +71,7 @@ void send_pulse() {
     TIMER3_CTL_R &= 0xFEFF;
 
     GPIO_PORTB_AFSEL_R &= 0xF7;
-    GPIO_PORTB_PCTL_R &= 0x0000;
+    GPIO_PORTB_PCTL_R &= 0xFFFF0000;
     GPIO_PORTB_DIR_R |= 0x08;
     GPIO_PORTB_DATA_R |= 0x08;
 
