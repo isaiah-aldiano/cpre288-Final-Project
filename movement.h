@@ -22,6 +22,4 @@ void turn_counterclockwise(oi_t*sensor, double degrees);
 
 void bump (oi_t*sensor_data, int sum);
 
-void turn_random_dir(oi_t*sensor_data);
-
 #endif /* MOVEMENT_H_ */

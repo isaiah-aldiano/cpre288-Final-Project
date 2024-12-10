@@ -12,8 +12,8 @@ int degrees = 90;
 int position = 4000;
 short switch_direction = 1;
 int base_1_millisecond = 16000;
-int right_cal = 6000;
-int left_cal = 33700;
+int right_cal = 8800;
+int left_cal = 36500;
 float difference;
 float denom;
 

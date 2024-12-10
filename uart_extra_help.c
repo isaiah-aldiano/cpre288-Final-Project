@@ -86,10 +86,25 @@ void UART1_Handler(void) {
         char input;
         input = UART1_DR_R & 0xFF;
         uart_sendChar(input);
+        uart_sendChar('\r');
+        uart_sendChar('\n');
 
         if(input == 'r') {
             doSomething = 1;
+        } else if (input == 'h') {
+            doSomething = 2;
+        } else if (input == 'w') {
+            doSomething = 3;
+        } else if (input == 'a') {
+            doSomething = 4;
+        } else if (input == 's') {
+            doSomething = 5;
+        } else if (input == 'd') {
+            doSomething = 6;
+        } else if (input == 'f') {
+            doSomething = 7;
         }
+
 
         UART1_ICR_R |= 0x10;
     }

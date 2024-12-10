@@ -15,15 +15,14 @@
 //void turn_counter_clockwise(oi_t *sensor_data, double degrees);
 //void turn_clockwise(oi_t *sensor_data, double degrees);
 //void bump (oi_t*sensor_data, int sum);
-//void helpSend(char data[]);
+void helpSend(char data[]);
 void cliff(oi_t*sensor_data, int sum);
-void turn_random_dir();
 
 const double ERROR = .017;
 
 void turn_clockwise(oi_t *sensor_data, double degrees){
     double sum = 0;
-    oi_setWheels(-50, 50); // turn clockwise
+    oi_setWheels(-75, 75); // turn clockwise
     while (sum > (-1 * degrees) + (degrees * ERROR)) { //turn set degrees
              oi_update(sensor_data);
              sum += sensor_data->angle;
@@ -33,7 +32,7 @@ void turn_clockwise(oi_t *sensor_data, double degrees){
 
 void turn_counterclockwise(oi_t *sensor_data, double degrees){
     double sum = 0;
-    oi_setWheels(50, -50); // turn counterclockwise
+    oi_setWheels(75, -75); // turn counterclockwise
     while (sum < degrees - (degrees * ERROR)) { //turn set degrees
              oi_update(sensor_data);
              sum += sensor_data->angle;
@@ -59,13 +58,11 @@ void move_forward(oi_t*sensor_data, double centimeters){
         if(sensor_data->bumpLeft ||sensor_data->bumpRight){
             bump(sensor_data, sum);
             oi_setWheels(0, 0);
-            turn_random_dir(sensor_data);
             break;
         }
         if(sensor_data->cliffLeftSignal < 100 || sensor_data->cliffRightSignal < 100 || sensor_data->cliffLeftSignal > 2700 || sensor_data->cliffRightSignal > 2700){
             cliff(sensor_data, sum);
             oi_setWheels(0, 0);
-            turn_random_dir(sensor_data);
             break;
         }
          oi_update(sensor_data);
@@ -78,7 +75,7 @@ void bump (oi_t*sensor_data, int sum){
     oi_setWheels(0, 0);
 
     //Send bump to GUI to alert user of object to remove
-    char message[] = "Bump";
+    char message[] = "MMMMMMBumpMMMMMM";
     helpSend(message);
 
     unsigned char notes[4] = {67, 67, 72, 67};
@@ -105,6 +102,8 @@ void bump (oi_t*sensor_data, int sum){
 }
 
 void cliff(oi_t*sensor_data, int sum){
+    uart_init();
+
     oi_setWheels(0, 0); // stop
 
     //move_backwards(sensor_data, 10);
@@ -112,11 +111,28 @@ void cliff(oi_t*sensor_data, int sum){
     unsigned char duration[4] = {15, 15, 20, 15};
     oi_loadSong(0, 4, notes, duration);
 
+
+    if(sensor_data->cliffLeftSignal < 100 || sensor_data->cliffRightSignal < 100) {
+        if(sensor_data->cliffLeftSignal < 100) {
+            helpSend("\r\n____HOLE LEFT____\r\n");
+        } else if(sensor_data->cliffRightSignal < 100) {
+            helpSend("\r\n____HOLE RIGHT____\r\n");
+        }
+    } else if (sensor_data->cliffLeftSignal > 2700 || sensor_data->cliffRightSignal > 2700) {
+        if(sensor_data->cliffLeftSignal > 2700) {
+            helpSend("\r\n####Boundry LEFT####\r\n");
+        } else if(sensor_data->cliffRightSignal > 2700) {
+            helpSend("\r\n####Boundry RIGHT####\r\n");
+        }
+    }
+
+    move_backwards(sensor_data, 10);
+
 //    oi_play_song(0);
 
 //    distTrav = distTrav - 60 + (sum / 10);
 //
-    move_backwards(sensor_data, 10);
+//    move_backwards(sensor_data, 10);
 //    turn_clockwise(sensor_data, 90);
 //    //TODO: scan here
 //    move_forward(sensor_data, 50);
@@ -140,16 +156,5 @@ void helpSend(char data[]){
         uart_sendChar(data[i]);
     }
     uart_sendChar('\n');
-}
-
-
-void turn_random_dir(oi_t*sensor_data) {
-    int r = rand();
-
-    if(r % 2 == 0) {
-        turn_clockwise(sensor_data, 90);
-    } else {
-        turn_counterclockwise(sensor_data, 90);
-    }
 }
 

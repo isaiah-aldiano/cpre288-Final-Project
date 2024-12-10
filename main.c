@@ -43,12 +43,16 @@ void determineObjects(float scanData[], struct someObject obj[], char printData[
 void objectsInit(struct someObject obj[]);
 void sizeObjects(struct someObject obj[], float scanData[]);
 void removeObjects(struct someObject obj[], char printData[]);
+void displayObjects(struct someObject obj[], float scanData[]);
 int moveToAvoid(struct someObject obj[], oi_t *sensor_data);
+void giveDirection(int facing);
 
 volatile int doSomething = 0;
 float botSizeCm = 38;
 float returnToPath;
 int objectAtSide;
+volatile int continuing = -1;
+volatile int facing = 0;
 
 /**
  * main.c
@@ -75,7 +79,7 @@ int main(void)
 //    timer_waitMillis(1000);
 //    ADC_calibrate();
 
-    volatile int continuing = -1;
+
     int r;
 
     float scanData[180];
@@ -85,24 +89,71 @@ int main(void)
 
 
     while(1) {
+        uart_init();
+//        while(1) {
+//            oi_setWheels(0, 0); // stop
+//            uart_init();
+//
+//            runScan(scanData, printData);
+//            determineObjects(scanData, obj, printData);
+//            sizeObjects(obj, scanData);
+//            removeObjects(obj, printData);
+////            continuing = moveToAvoid(obj, sensor_data);
+//            objectsInit(obj);
+//            if(continuing == 2) {
+//                break;
+//            }
+//        }
+//
+//
+//        move_forward(sensor_data, 40);
+//        if(doSomething) {
+//            uart_sendStr("\r\n");
+//            doSomething = 0;
+//            break;
+//        }
 
-        while(1) {
-            oi_setWheels(0, 0); // stop
-            uart_init();
-
+        switch(doSomething) {
+        case 2: // run scan and display objects
             runScan(scanData, printData);
             determineObjects(scanData, obj, printData);
             sizeObjects(obj, scanData);
+            displayObjects(obj, scanData);
             removeObjects(obj, printData);
-//            continuing = moveToAvoid(obj, sensor_data);
             objectsInit(obj);
-            if(continuing == 2) {
-                break;
+            doSomething = 0;
+            break;
+        case 3: // w
+            move_forward(sensor_data, 2);
+            doSomething = 0;
+            break;
+        case 4: // a
+            turn_counterclockwise(sensor_data, 45);
+            facing -= 45;
+            if(facing < 0) {
+                facing += 360;
             }
+            doSomething = 0;
+            break;
+        case 5: // s
+            move_backwards(sensor_data, 2);
+            doSomething = 0;
+            break;
+        case 6: // d
+            turn_clockwise(sensor_data, 45);
+            facing += 45;
+            if(facing > 360) {
+                facing -= 360;
+            }
+            doSomething = 0;
+            break;
+        case 7:
+            giveDirection(facing);
+            doSomething = 0;
+            break;
         }
 
 
-        move_forward(sensor_data, 40);
     }
 
     return 1;
@@ -136,8 +187,6 @@ void runScan(float scanData[], char printData[]) {
 
         sprintf(printData,"%-10d %d\r\n", i, (int) dist_cm / scans);
         uart_sendStr(printData);
-
-
     }
 
     timer_waitMillis(1000);
@@ -153,13 +202,6 @@ void determineObjects(float scanData[], struct someObject obj[], char printData[
     int margin = 4;
 
     for(i = 1; i < 180; i++) {
-//        while(scanData[i] - margin >= scanData[i - 1] || scanData[i] + margin <= scanData[i -1] && scanData[i] < 35) {
-//            if(start == -1) {
-//                start = i - 1;
-//            }
-//            i++;
-//            points++;
-//        }
         while(((scanData[i] - margin <= scanData[i - 1] && scanData[i - 1] <= scanData[i]) ||
                 (scanData[i] + margin >= scanData[i - 1] && scanData[i - 1] >= scanData[i]))
                 && scanData[i] < 35) {
@@ -214,13 +256,6 @@ float pingObjects(int angle) {
         distance_cm /= 2.0; // Only account for seconds to object
         distance_cm *= 34000.0; // Seconds to object * Speed of sound (~340m/s) * 100(cm in m) = cm to object
 
-//        sprintf(data, "CYC:%d\nMILLI:%.7f\nCM:%.2f\nOverflow:%d", cycles, cycles_in_milliseconds, distance_cm, overflow);
-//
-//
-//
-//        //        sprintf(data, "%d %d\n%d\n%d", rising_time, falling_time, rising_time - falling_time, falling_time - rising_time);
-//        lcd_printf(data);
-
         avg_dist += distance_cm;
 
         timer_waitMillis(250);
@@ -236,15 +271,11 @@ void sizeObjects(struct someObject obj[], float scanData[]) {
     float theda;
     int angle;
     while(obj[i].angle != -1 && i < 5) {
-//        h = scanData[obj[i].start] * 2;
-//        angle = (obj[i].angle - obj[i].start) * 2;
-//        theda = sin((angle * M_PI) / 180);
-//        obj[i].pingDist = pingObjects(obj[i].angle);
 
         h = scanData[obj[i].start] * 2;
 //        angle = (obj[i].angle - obj[i].start) * 2;
         theda = tan((obj[i].size * M_PI) / 360);
-        obj[i].pingDist = pingObjects(obj[i].angle);
+        obj[i].pingDist = pingObjects(obj[i].start);
 
         obj[i].linearWidth =  h * theda;
         i++;
@@ -270,23 +301,20 @@ void objectsInit(struct someObject obj[]) {
 
 void removeObjects(struct someObject obj[], char printData[]) {
     int i = 0;
-//    char buffer[30];
-
     uart_init();
 
     while(obj[i].start != -1 && i < 5) {
         if(obj[i].linearWidth <= 7.3) {
             sprintf(printData, "Object %d removed\r\n", i + 1);
             uart_sendStr(printData);
-            while(1) {
-//                uart_sendChar(doSomething);
-                if(doSomething) {
-                    uart_sendStr("\r\n");
-                    doSomething = 0;
-                    break;
-                }
-            }
-
+//            while(1) {
+////                uart_sendChar(doSomething);
+////                if(doSomething) {
+////                    uart_sendStr("\r\n");
+////                    doSomething = 0;
+////                    break;
+////                }
+//            }
         } else {
             sprintf(printData, "Object %d immovable and will be avoided\r\n", i + 1);
             uart_sendStr(printData);
@@ -298,6 +326,87 @@ void removeObjects(struct someObject obj[], char printData[]) {
 
         i++;
     }
+}
+
+void displayObjects(struct someObject obj[], float scanData[]) {
+    uart_init();
+    unsigned short i = 0;
+    unsigned short j;
+    unsigned short k;
+    bool printed = false;
+    char buffer[30];
+
+//    struct someObject{
+//        short start;
+//        short end;
+//        short size;
+//        short angle;
+//        int pingDist;
+//        float linearWidth;
+//        bool avoid;
+//        float avoidDist;
+//    };
+
+    while(obj[i].start != -1 && i < 5) {
+        sprintf(buffer, "Obj%d: %d cm away\r\n", i + 1, obj[i].pingDist);
+        uart_sendStr(buffer);
+        i++;
+    }
+
+    for(k = 0; k < 7; k++) {
+        uart_sendChar('\r');
+        uart_sendChar('\n');
+        for(i = 179; i > 0; i--) {
+
+            for(j = 0; j < 5; j++) {
+                if(i >= obj[j].start && i <= obj[j].end) {
+                    if (i == 179 || i == 134 || i == 89 || i == 44 || i == 1) {
+                        uart_sendChar('|');
+                    } else {
+                        uart_sendChar('#');
+                    }
+
+                    printed = true;
+                    break;
+                }
+            }
+            if(printed) {
+                printed = false;
+            } else if (i == 179 || i == 134 || i == 89 || i == 44 || i == 1) {
+                uart_sendChar('|');
+            }else {
+                uart_sendChar(' ');
+            }
+        }
+    }
+
+    uart_sendChar('\r');
+    uart_sendChar('\n');
+}
+
+void giveDirection(int facing) {
+    uart_init();
+    char buffer[15];
+
+    if(facing == 0 || facing == 360) {
+        sprintf(buffer, "NORTH\r\n");
+    } else if (facing == 45) {
+        sprintf(buffer, "NORTHEAST\r\n");
+    } else if (facing == 90) {
+        sprintf(buffer, "EAST\r\n");
+    } else if (facing == 135) {
+        sprintf(buffer, "SOUTHEAST\r\n");
+    } else if (facing == 180) {
+        sprintf(buffer, "SOUTH\r\n");
+    } else if (facing == 225) {
+        sprintf(buffer, "SOTUHWEST\r\n");
+    } else if (facing == 270) {
+        sprintf(buffer, "WEST\r\n");
+    } else if (facing == 315) {
+        sprintf(buffer, "NORTHWEST\r\n");
+    }
+
+    uart_sendStr(buffer);
 }
 
 //int moveToAvoid(struct someObject obj[], oi_t *sensor_data) {
