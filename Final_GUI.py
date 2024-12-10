@@ -61,8 +61,8 @@ def main():
         scan_command_Button = tk.Button(text ="Press to Move Right", command = send_right)
         scan_command_Button.pack() # Pack the button into the window for display
 
-        entry = tk.Entry(window)
-        entry.pack()
+        #entry = tk.Entry(window)
+        #entry.pack()
 
         #button.bind('<Alt-KeyPress-w>', lambda event: print(event))
 
@@ -168,8 +168,8 @@ def socket_thread():
                         # Create or overwrite existing sensor scan data file
                         file_object = open(full_path + filename,'w') # Open the file: file_object is just a variable for the file "handler" returned by open()
 
-                        while(rx_message.decode() == "\n"):
-                                rx_message = cybot.readline()
+                        #while(rx_message.decode() == "\n"):
+                         #       rx_message = cybot.readline()
                         
                         while (rx_message.decode() != "END\n"): # Collect sensor data until "END" recieved
                                 file_object.write(rx_message.decode())  # Write a line of sensor data to the file
